@@ -1,0 +1,332 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// User model for authentication and authorization
+model User {
+  id            String    @id @default(uuid())
+  name          String
+  email         String    @unique
+  password      String
+  role          UserRole  @default(USER)
+  status        String    @default("active")
+  lastLogin     DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // Relations
+  createdOrders   Order[]    @relation("OrderCreatedBy")
+  updatedOrders   Order[]    @relation("OrderUpdatedBy")
+  createdInvoices Invoice[]  @relation("InvoiceCreatedBy")
+  updatedInvoices Invoice[]  @relation("InvoiceUpdatedBy")
+  payments        Payment[]
+  stockMovements  StockMovement[]
+}
+
+// Customer information
+model Customer {
+  id            String    @id @default(uuid())
+  name          String
+  email         String?
+  phone         String?
+  address       String?
+  city          String?
+  state         String?
+  zipCode       String?
+  country       String?
+  taxId         String?
+  customerGroup String?   @default("Standard")
+  status        String    @default("active")
+  notes         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // Relations
+  invoices      Invoice[]
+  payments      Payment[]
+  orders        Order[]
+}
+
+// Product catalog
+model Product {
+  id                String     @id @default(uuid())
+  name              String
+  description       String?
+  sku               String    @unique
+  barcode           String?
+  categoryId        String?
+  category          Category? @relation(fields: [categoryId], references: [id])
+  brand             String?
+  costPrice         Float
+  sellingPrice      Float
+  taxRate           Float     @default(0)
+  initialStock      Int       @default(0)
+  currentStock      Int       @default(0)
+  lowStockThreshold Int       @default(10)
+  trackInventory    Boolean   @default(true)
+  status            ProductStatus @default(ACTIVE)
+  metaTitle         String?
+  metaDescription   String?
+  urlSlug          String?   @unique
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  // Relations
+  variants      ProductVariant[]
+  orderItems    OrderItem[]
+  invoiceItems  InvoiceItem[]
+  stockMovements StockMovement[]
+  tags          Tag[]
+  keywords      Keyword[]
+}
+
+// Product variants
+model ProductVariant {
+  id          String   @id @default(uuid())
+  productId   String
+  product     Product  @relation(fields: [productId], references: [id])
+  name        String
+  sku         String   @unique
+  price       Float
+  stock       Int      @default(0)
+  barcode     String?
+  attributes  Json?    // Stores variant attributes like size, color, etc.
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// Invoice management
+model Invoice {
+  id              String       @id @default(uuid())
+  invoiceNumber   String      @unique
+  customerId      String
+  customer        Customer    @relation(fields: [customerId], references: [id])
+  issueDate       DateTime
+  dueDate         DateTime
+  status          InvoiceStatus @default(DRAFT)
+  subtotal        Float
+  taxAmount       Float
+  discountType    DiscountType?
+  discountValue   Float?
+  discountAmount  Float
+  total           Float
+  notes           String?
+  terms           String?
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+  createdById     String
+  createdBy       User        @relation("InvoiceCreatedBy", fields: [createdById], references: [id])
+  updatedById     String?
+  updatedBy       User?       @relation("InvoiceUpdatedBy", fields: [updatedById], references: [id])
+
+  // Relations
+  items          InvoiceItem[]
+  payments       Payment[]
+}
+
+// Invoice line items
+model InvoiceItem {
+  id          String   @id @default(uuid())
+  invoiceId   String
+  invoice     Invoice   @relation(fields: [invoiceId], references: [id])
+  productId   String
+  product     Product   @relation(fields: [productId], references: [id])
+  description String
+  quantity    Int
+  unitPrice   Float
+  taxRate     Float
+  taxAmount   Float
+  total       Float
+}
+
+// Payment processing
+model Payment {
+  id             String      @id @default(uuid())
+  invoiceId      String?
+  invoice        Invoice?    @relation(fields: [invoiceId], references: [id])
+  customerId     String
+  customer       Customer    @relation(fields: [customerId], references: [id])
+  amount         Float
+  paymentDate    DateTime    @default(now())
+  paymentMethod  String
+  transactionId  String?
+  status         PaymentStatus @default(COMPLETED)
+  notes          String?
+  processedById  String
+  processedBy    User        @relation(fields: [processedById], references: [id])
+  processedAt    DateTime    @default(now())
+}
+
+// Order management
+model Order {
+  id              String       @id @default(uuid())
+  orderNumber     String      @unique
+  customerId      String
+  customer        Customer    @relation(fields: [customerId], references: [id])
+  orderDate       DateTime    @default(now())
+  status          OrderStatus @default(PENDING)
+  subtotal        Float
+  taxAmount       Float
+  discountAmount  Float
+  total           Float
+  notes           String?
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+  createdById     String
+  createdBy       User        @relation("OrderCreatedBy", fields: [createdById], references: [id])
+  updatedById     String?
+  updatedBy       User?       @relation("OrderUpdatedBy", fields: [updatedById], references: [id])
+
+  // Relations
+  items          OrderItem[]
+}
+
+// Order line items
+model OrderItem {
+  id          String   @id @default(uuid())
+  orderId     String
+  order       Order     @relation(fields: [orderId], references: [id])
+  productId   String
+  product     Product   @relation(fields: [productId], references: [id])
+  description String
+  quantity    Int
+  unitPrice   Float
+  taxRate     Float
+  taxAmount   Float
+  total       Float
+}
+
+// Inventory tracking
+model StockMovement {
+  id            String     @id @default(uuid())
+  productId     String
+  product       Product    @relation(fields: [productId], references: [id])
+  type          StockMovementType
+  quantity      Int
+  previousStock Int
+  newStock      Int
+  referenceId   String?    // Can reference OrderId, InvoiceId, etc.
+  referenceType String?    // 'ORDER', 'INVOICE', 'ADJUSTMENT', etc.
+  reason        String?
+  processedById String
+  processedBy   User       @relation(fields: [processedById], references: [id])
+  processedAt   DateTime   @default(now())
+}
+
+// Product categories
+model Category {
+  id          String    @id @default(uuid())
+  name        String    @unique
+  description String?
+  parentId    String?
+  parent      Category?  @relation("CategoryToCategory", fields: [parentId], references: [id])
+  children    Category[] @relation("CategoryToCategory")
+  products    Product[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+// Tags for products
+model Tag {
+  id        String    @id @default(uuid())
+  name      String    @unique
+  products  Product[]
+  createdAt DateTime  @default(now())
+}
+
+// Search keywords for products
+model Keyword {
+  id        String    @id @default(uuid())
+  keyword   String
+  productId String
+  product   Product   @relation(fields: [productId], references: [id])
+  
+  @@unique([keyword, productId])
+}
+
+// Company information
+model Company {
+  id        String    @id @default(uuid())
+  name      String
+  email     String?
+  phone     String?
+  address   String?
+  city      String?
+  state     String?
+  zipCode   String?
+  country   String?
+  taxId     String?
+  logo      String?
+  currency  String    @default("USD")
+  timezone  String    @default("UTC")
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
+// Enums
+enum UserRole {
+  ADMIN
+  MANAGER
+  USER
+  CUSTOMER_SERVICE
+  SALES
+  WAREHOUSE
+}
+
+enum ProductStatus {
+  ACTIVE
+  INACTIVE
+  DRAFT
+  ARCHIVED
+}
+
+enum InvoiceStatus {
+  DRAFT
+  SENT
+  PAID
+  OVERDUE
+  CANCELLED
+  REFUNDED
+}
+
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  PROCESSING
+  SHIPPED
+  DELIVERED
+  CANCELLED
+  RETURNED
+}
+
+enum PaymentStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  REFUNDED
+  PARTIALLY_REFUNDED
+}
+
+enum DiscountType {
+  PERCENTAGE
+  FIXED_AMOUNT
+}
+
+enum StockMovementType {
+  PURCHASE
+  SALE
+  RETURN
+  ADJUSTMENT
+  TRANSFER_IN
+  TRANSFER_OUT
+  DAMAGED
+  LOST
+}

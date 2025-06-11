@@ -28,11 +28,14 @@ import Categories from "./pages/Categories";
 import StockManagement from "./pages/StockManagement";
 import Products from "./pages/Products";
 import PurchaseOrders from "./pages/PurchaseOrders";
+import ProductCreate from "./pages/ProductCreate";
+import { usePageContext } from "./hooks/pageContext";
 
 export default function App() {
-  const [currentPage, setCurrentPage] = useState("dashboard");
+ 
 
   const renderPage = () => {
+    const { currentPage } = usePageContext();
     switch (currentPage) {
       case "dashboard":
         return   <Dashboard /> ;
@@ -46,6 +49,8 @@ export default function App() {
         return <SalesOrders />;
       case "products":
         return <Products />;
+      case "products/create":
+        return <ProductCreate />;
       case "categories":
         return <Categories />;
       case "inventory/stock":
@@ -87,7 +92,7 @@ export default function App() {
         <Sonner />
         <SidebarProvider>
           <div className="min-h-screen flex w-full">
-            <AppSidebar setCurrentPage={setCurrentPage} />
+            <AppSidebar />
             <div className="flex-1 flex flex-col">
               <Header />
               <main className="w-full">{renderPage()}</main>

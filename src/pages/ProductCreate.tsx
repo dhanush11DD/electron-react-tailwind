@@ -24,9 +24,9 @@ import {
 } from "@/components/ui/form"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
-import { ArrowLeft, Save, Upload, Plus, X, Image as ImageIcon } from "lucide-react"
-import { Link } from "react-router-dom"
+import { ArrowLeft, Save, Plus, X, Image as ImageIcon } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
+import { usePageContext } from "@/hooks/pageContext"
 
 interface ProductFormData {
   // Basic Info
@@ -72,6 +72,8 @@ export default function ProductCreate() {
   const [tagInput, setTagInput] = useState("")
   const [keywordInput, setKeywordInput] = useState("")
   const { toast } = useToast()
+
+  const { setCurrentPage } = usePageContext();
   
   const form = useForm<ProductFormData>({
     defaultValues: {
@@ -184,12 +186,12 @@ export default function ProductCreate() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center gap-4">
+      <div className="flex flex-col justify-between items-start gap-4">
         <Button variant="ghost" size="sm" asChild>
-          <Link to="/products">
+          <div onClick={() => setCurrentPage("products")}>
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back to Products
-          </Link>
+          </div>
         </Button>
         
         <div>
@@ -697,7 +699,7 @@ export default function ProductCreate() {
               {isSubmitting ? 'Creating Product...' : 'Create Product'}
             </Button>
             <Button type="button" variant="outline" asChild>
-              <Link to="/products">Cancel</Link>
+              <div onClick={() => setCurrentPage("products")}>Cancel</div>
             </Button>
             <Button type="button" variant="ghost">
               Save as Draft

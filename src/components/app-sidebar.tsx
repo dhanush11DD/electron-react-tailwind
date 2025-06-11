@@ -32,6 +32,7 @@ import {
   SidebarFooter,
 } from "@/components/ui/sidebar"
 import { cn } from "@/lib/utils"
+import { usePageContext } from "@/hooks/pageContext";
 
 const menuGroups = [
   {
@@ -166,8 +167,8 @@ const menuGroups = [
   },
 ]
 
-export function AppSidebar({ setCurrentPage }: { setCurrentPage: (page: string) => void }) {
-  // const location = useLocation()
+export function AppSidebar() {
+  const { setCurrentPage } = usePageContext();
 
   return (
     <Sidebar className="border-r bg-sidebar">

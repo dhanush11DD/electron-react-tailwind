@@ -34,12 +34,15 @@ import {
 } from "lucide-react"
 import { products, type Product } from "@/constants/dummyData"
 import { ProductCard } from "@/components/ProductCard"
+import { usePageContext } from "@/hooks/pageContext"
 
 export default function Products() {
   const [searchTerm, setSearchTerm] = useState("")
   const [categoryFilter, setCategoryFilter] = useState("all")
   const [statusFilter, setStatusFilter] = useState("all")
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
+
+  const { setCurrentPage } = usePageContext();
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-US', {
@@ -103,7 +106,7 @@ export default function Products() {
           <p className="text-muted-foreground">Manage your product catalog and inventory</p>
         </div>
         <Button asChild>
-          <div>
+          <div className="cursor-pointer" onClick={() => setCurrentPage("products/create")}>
             <Plus className="h-4 w-4 mr-2" />
             Add Product
           </div>
